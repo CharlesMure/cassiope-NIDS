@@ -1,14 +1,23 @@
 # cassiope-NIDS
 Creating a NIDS for SDN based on a Deep Neural Network
 
-### TODO
+## TODO
 
 * Evaluer les modèles + algortihme d'apprentissage en utilisant le [NSL-KDD Dataset][NSL-KDD]
   * Utilisation de "Feature Extraction"
 * Recherhcer les features accessibles sur OpenFlow
 * Contacter a.habibi.l@unb.ca pour récupérer des Datasets réels
 
-### Sytem Details
+## Set-Up
+
+We Use Python3, TensorFlow and Keras to generate and test our models
+
+ $ pip3 install jupyter
+ $ pip3 install tensorflow-gpu
+ $ pip install keras
+ 
+ 
+## Sytem Details
 
 #### Categories of attacks supported ####
 * DoS
