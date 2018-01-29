@@ -12,9 +12,12 @@ Creating a NIDS for SDN based on a Deep Neural Network
 
 We Use Python3, TensorFlow and Keras to generate and test our models
 
- $ pip3 install jupyter
- $ pip3 install tensorflow-gpu
- $ pip install keras
+```
+ pip3 install jupyter
+ pip3 install tensorflow-gpu
+ pip3 install keras
+```
+
  
  
 ## Sytem Details
