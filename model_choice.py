@@ -7,29 +7,66 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation
 from keras.optimizers import SGD
 
-import numpy as np
+import numpy
 
-x_train = np.random.random((1000, 13)) #nb de dataset , iteration de ces datasets
-y_train = keras.utils.to_categorical(np.random.randint(2, size=(1000, 1)), num_classes=2)
-x_test = np.random.random((100, 13))
-y_test = keras.utils.to_categorical(np.random.randint(2, size=(100, 1)), num_classes=2)
+import scipy
+import scipy.io.arff
 
-model = Sequential()
+from sklearn.preprocessing import LabelBinarizer
 
-model.add(Dense(26, activation='softmax', input_dim=13))
-model.add(Dropout(0.5))
-model.add(Dense(13, activation='softmax'))
-model.add(Dropout(0.5))
-model.add(Dense(7, activation='softmax'))
-model.add(Dropout(0.5))
-model.add(Dense(2, activation='softmax'))
+def arff_to_ndarray(path_to_arff_file):
+    """
+    Converts content of .arff file to numpy matrix.
+    :param path_to_arff_file:
+    :return: numpy.ndarray matrix for feature values, vector with labels/classes.
+    """
 
-keras.utils.plot_model(model, show_shapes=True, rankdir="LR")
+    # Load as numpy objects.
+    data, meta = scipy.io.arff.loadarff(path_to_arff_file)
 
-sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
-model.compile(loss='mean_squared_error', optimizer=sgd, metrics=['accuracy'])
+    # Extract labels.
+    labels = data[meta.names()[-1]]
 
-model.fit(x_train, y_train, epochs=100, batch_size=20)
-score = model.evaluate(x_test, y_test, batch_size=20)
+    # Discard last column (labels).
+    data = data[meta.names()[:-1]]
 
-keras.utils.plot_model(model, show_shapes=True)
+    # Use view(numpy.float) to convert elements from numpy.void to numpy.float. Use -1 to let numpy infer the shape.
+    data = data.view().reshape(data.shape)
+
+    return data, labels
+
+def generate_model(shape):
+    # define the model
+    model = keras.models.Sequential()
+
+    model.add(Dense(82, input_dim=shape, kernel_initializer='uniform', activation='relu'))
+    model.add(Dropout(0.4))
+    model.add(Dense(41, activation='relu'))
+    model.add(Dropout(0.4))
+    model.add(Dense(20, activation='softmax'))
+    model.add(Dropout(0.4))
+    model.add(Dense(10, activation='softmax'))
+    model.add(Dropout(0.4))
+    model.add(Dense(2, activation='softmax'))
+    print(model.summary())
+
+    return model
+
+encoder = LabelBinarizer()
+
+x_train, train_label = arff_to_ndarray("KDDTrain+_20Percent.arff")
+x_train = numpy.array(x_train)
+y_train = encoder.fit_transform(train_label)
+y_train = numpy.array(y_train)
+
+x_test, test_label = arff_to_ndarray("KDDTest+.arff")
+x_test = numpy.array(x_test)
+y_test = encoder.fit_transform(test_label)
+y_test = numpy.array(y_test)
+
+model = generate_model(41)
+
+model.compile(loss=keras.losses.mean_squared_error,
+              optimizer=keras.optimizers.SGD(lr=0.01, momentum=0.9, nesterov=True))
+
+model.fit(x_train, y_train, epochs=10)
