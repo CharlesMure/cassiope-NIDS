@@ -8,7 +8,6 @@ from keras.callbacks import TensorBoard
 from keras import layers, models, optimizers
 from keras import backend as K
 from keras.utils import to_categorical
-import matplotlib.pyplot as plt
 from capsulelayers import CapsuleLayer, PrimaryCap, Length, Mask
 from keras.models import Sequential
 from keras.layers import Conv2D, GlobalAveragePooling1D, MaxPooling2D
@@ -104,11 +103,9 @@ def generate_cnn_model(shape):
     model.add(MaxPooling2D(pool_size=(2, 1)))
     model.add(Flatten())
     model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(124, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(32, activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.2))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.2))
     model.add(Dense(6, activation='softmax'))
     return model
 
@@ -265,8 +262,8 @@ def main():
         model = generate_cnn_model(41)
 
         # initiate RMSprop optimizer
-        opt =optimizers.Adam(lr=0.001)
-        model.compile(loss='categorical_crossentropy',optimizer='rmsprop',metrics=['accuracy'])
+        opt =optimizers.Adam(lr=0.0005)
+        model.compile(loss='categorical_crossentropy',optimizer=opt,metrics=['accuracy'])
     elif (P1 =='3'):
         # compile the model
         # define model
@@ -278,7 +275,7 @@ def main():
 
     print(model.summary())
 
-    model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=20, batch_size=50,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+    model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=10, batch_size=50,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
 
     eval(model, x_test, y_test)
 
