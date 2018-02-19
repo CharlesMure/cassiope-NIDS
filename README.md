@@ -5,15 +5,15 @@ Creating a NIDS for SDN based on a Deep Neural Network
 
 * Evaluer les modèles + algortihme d'apprentissage en utilisant le [NSL-KDD Dataset][NSL-KDD]
   * Utilisation de "Feature Extraction"
+  * Améliorer les performances des modèles actuels sur le NSL-KDD
 * Recherhcer les features accessibles sur OpenFlow
-* Contacter a.habibi.l@unb.ca pour récupérer des Datasets réels
 
 ## Set-Up
 
 We Use Python3, TensorFlow and Keras to generate and test our models
 
 ```
- pip3 install jupyter
+ pip3 install numpy
  pip3 install tensorflow-gpu
  pip3 install keras
 ```
@@ -29,7 +29,10 @@ We Use Python3, TensorFlow and Keras to generate and test our models
 * Probe
 
 #### Models ####
-* [CapsNet][CapsNet]
+* [CapsNet][CapsNet] (to implement)
+* CNN-SVM
+* MLP
+* RCNN (to implement)
 
 
 ### Utils
