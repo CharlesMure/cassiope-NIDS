@@ -115,7 +115,7 @@ def preporcess(data, dataTest, CNN=False):
     encoder = LabelBinarizer()
     encoder2 = LabelEncoder()
 
-    x_train = data[:,np.arange(0,41)]
+    x_train = data[:, np.arange(0,41)]
     x_train[:,1] = encoder2.fit_transform(x_train[:,1])
     x_train[:,2] = encoder2.fit_transform(x_train[:,2])
     x_train[:,3] = encoder2.fit_transform(x_train[:,3])
@@ -186,7 +186,7 @@ def CapsNet(input_shape, n_class, routings):
     conv1 = layers.Conv2D(filters=64, kernel_size=(3,1), strides=1, padding='valid', activation='relu', name='conv1')(x)
 
     # Layer 2: Conv2D layer with `squash` activation, then reshape to [None, num_capsule, dim_capsule]
-    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=32, kernel_size=(3,1), strides=2, padding='valid')
+    primarycaps = PrimaryCap(conv1, dim_capsule=8, n_channels=1, kernel_size=(3,1), strides=2, padding='valid')
 
     # Layer 3: Capsule layer. Routing algorithm works here.
     digitcaps = CapsuleLayer(num_capsule=n_class, dim_capsule=16, routings=routings,
@@ -197,12 +197,12 @@ def CapsNet(input_shape, n_class, routings):
     out_caps = Length(name='capsnet')(digitcaps)
 
     # Decoder network.
-    y = layers.Input(shape=(n_class,))
-    masked_by_y = Mask()([digitcaps, y])  # The true label is used to mask the output of capsule layer. For training
+    y = layers.Input(shape=(n_class, 1))
+    masked_by_y = Mask()([digitcaps + 1, y])  # The true label is used to mask the output of capsule layer. For training
 
     # Shared Decoder model in training and prediction
     decoder = models.Sequential(name='decoder')
-    decoder.add(layers.Dense(512, activation='relu', input_dim=16*n_class))
+    decoder.add(layers.Dense(512, activation='relu', input_dim=16 * n_class))
     decoder.add(layers.Dense(1024, activation='relu'))
     decoder.add(layers.Dense(np.prod(input_shape), activation='sigmoid'))
     decoder.add(layers.Reshape(target_shape=input_shape, name='out_recon'))
@@ -249,7 +249,7 @@ def main():
     if(P1=='2' or P1=='3'): 
         CNN = True
 
-    x_train, y_train, x_validation, y_validation, x_test, y_test = preporcess(data,dataTest,CNN)
+    x_train, y_train, x_validation, y_validation, x_test, y_test = preporcess(data, dataTest, CNN)
 
     if (P1 == '1'):
          ### MLP model ###
@@ -258,7 +258,7 @@ def main():
               optimizer=optimizers.Adam(lr=0.001),metrics=['accuracy'])
     
     elif (P1 == '2'):
-        ### CNN 1D model ##
+        ### CNN 2D model ##
         model = generate_cnn_model(41)
 
         # initiate RMSprop optimizer
@@ -267,7 +267,7 @@ def main():
     elif (P1 =='3'):
         # compile the model
         # define model
-        model = CapsNet(input_shape=(41,1,1), n_class=len(np.unique(np.argmax(y_train, 1))),routings=3)
+        model = CapsNet(input_shape=x_train.shape[1:], n_class=len(np.unique(np.argmax(y_train, 1))), routings=3)
         model.compile(optimizer=optimizers.Adam(lr=0.001),
                   loss=[margin_loss, 'mse'],
                   loss_weights=[1., 0.392],
@@ -275,7 +275,11 @@ def main():
 
     print(model.summary())
 
-    model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=10, batch_size=50,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+    if (P1 != '3'):
+        model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=10, batch_size=50,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+
+    else:
+        model.fit([x_train, y_train], [y_train, x_train], batch_size=50, epochs=10, validation_data=[[x_validation, y_validation], [y_validation, x_validation]])
 
     eval(model, x_test, y_test)
 
