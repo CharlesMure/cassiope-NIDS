@@ -238,14 +238,14 @@ def main():
         opt = ['rmsprop', 'adam']
         init = ['glorot_uniform', 'normal', 'uniform']
         epochs = [5,10,20]
-        batches = [20,50,100]
+        batches = [50]
     
         param_grid = dict(optimizer=opt, epochs=epochs,
                   batch_size=batches, init=init)
-        grid = GridSearchCV(estimator=model, param_grid=param_grid)
-        grid_result = grid.fit(x_train, y_train, validation_data=(x_validation, y_validation))
-
+        grid = GridSearchCV(estimator=model, param_grid=param_grid, verbose=10)
+        grid_result = grid.fit(x_train, y_train)
         # summarize results
+        print("Test on best: %f" % grid_result.score(x_test,y_test))
         print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
         means = grid_result.cv_results_['mean_test_score']
         stds = grid_result.cv_results_['std_test_score']
@@ -256,7 +256,7 @@ def main():
 
     if (P1 != '3'):
         model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=1, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
-
+        
         eval(model, x_test, y_test)
 
 
