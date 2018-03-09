@@ -14,56 +14,59 @@ from keras.layers import Conv2D, GlobalAveragePooling1D, MaxPooling2D
 from keras.layers import Dense, Dropout, Activation, Embedding, BatchNormalization, Flatten
 from keras.optimizers import SGD
 from keras.wrappers.scikit_learn import KerasClassifier
+from imblearn.over_sampling import SMOTE, ADASYN, RandomOverSampler
 
 import numpy as np
 
-
 from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn import svm
 
-
+# dos =1 / probe = 4 / r2l = 3 / u2r = 2 / normal =5
 def transform(x):
     return {
-        'back': 'dos',
-        'buffer_overflow': 'u2r',
-        'ftp_write': 'r2l',
-        'guess_passwd': 'r2l',
-        'imap': 'r2l',
-        'ipsweep': 'probe',
-        'land': 'dos',
-        'loadmodule': 'u2r',
-        'multihop': 'r2l',
-        'neptune': 'dos',
-        'nmap': 'probe',
-        'perl': 'u2r',
-        'phf': 'r2l',
-        'pod': 'dos',
-        'portsweep': 'probe',
-        'rootkit': 'u2r',
-        'satan': 'probe',
-        'smurf': 'dos',
-        'spy': 'r2l',
-        'teardrop': 'dos',
-        'warezclient': 'r2l',
-        'warezmaster': 'r2l',
-        'apache2': 'dos',
-        'mailbomb': 'dos',
-        'processtable': 'dos',
-        'mscan': 'probe',
-        'saint': 'probe',
-        'sendmail': 'r2l',
-        'named': 'r2l',
-        'snmpgetattack': 'r2l',
-        'snmpguess': 'r2l',
-        'xlock': 'r2l',
-        'xsnoop': 'r2l',
-        'worm': 'r2l',
-        'httptunnel': 'u2r',
-        'ps': 'u2r',
-        'sqlattack': 'u2r',
-        'xterm': 'u2r',
-        'normal': 'normal'
-    }.get(x, 'unknown')
+        'back': 1,
+        'udpstorm': 1,
+        'buffer_overflow': 2,
+        'ftp_write': 3,
+        'guess_passwd': 3,
+        'imap': 3,
+        'ipsweep': 4,
+        'land': 1,
+        'loadmodule': 2,
+        'multihop': 3,
+        'neptune': 1,
+        'nmap': 4,
+        'perl': 2,
+        'phf': 3,
+        'pod': 1,
+        'portsweep': 4,
+        'rootkit': 2,
+        'satan': 4,
+        'smurf': 1,
+        'spy': 3,
+        'teardrop': 1,
+        'warezclient': 3,
+        'warezmaster': 3,
+        'apache2': 1,
+        'mailbomb': 1,
+        'processtable': 1,
+        'mscan': 4,
+        'saint': 4,
+        'sendmail': 3,
+        'named': 3,
+        'snmpgetattack': 3,
+        'snmpguess': 3,
+        'xlock': 3,
+        'xsnoop': 3,
+        'worm': 3,
+        'httptunnel': 2,
+        'ps': 2,
+        'sqlattack': 2,
+        'xterm': 2,
+        'normal': 5
+    }[x]
 
 
 def generate_model(shape):
@@ -76,11 +79,11 @@ def generate_model(shape):
     model.add(Dense(164, activation='relu'))
     model.add(Dense(82, activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(41, activation='relu'))
+    model.add(Dense(41, activation='softmax'))
     model.add(Dropout(0.2))
-    model.add(Dense(20, activation='relu'))
+    model.add(Dense(20, activation='softmax'))
     model.add(Dropout(0.2))
-    model.add(Dense(6, activation='softmax'))
+    model.add(Dense(5, activation='softmax'))
 
     return model
 
@@ -103,11 +106,10 @@ def generate_cnn_model(shape):
     model.add(Conv2D(256, (3, 1), activation='relu', padding="same"))
     model.add(MaxPooling2D(pool_size=(2, 1)))
     model.add(Flatten())
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(6, activation='softmax'))
+    model.add(Dense(100, kernel_initializer='normal', activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(20, kernel_initializer='normal', activation='relu'))
+    model.add(Dense(5, kernel_initializer='normal', activation='softmax'))
     return model
 
 
@@ -125,7 +127,7 @@ def create_model(optimizer='rmsprop', init='glorot_uniform'):
     model.add(Dropout(0.2))
     model.add(Dense(20, kernel_initializer=init, activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(6, kernel_initializer=init, activation='softmax'))
+    model.add(Dense(5, kernel_initializer=init, activation='softmax'))
 
     model.compile(loss='categorical_crossentropy',
                   optimizer=optimizer, metrics=['accuracy'])
@@ -162,12 +164,24 @@ def preporcess(data, dataTest, CNN=False):
 
     # Join dataset => meme encoding pour train et test
     label = np.concatenate((train_label, test_label))
-    y = encoder.fit_transform(label)
 
     trainlen = np.size(train_label)
     testlen = np.size(test_label)
-    y_train = y[np.arange(0, trainlen)]
-    y_test = y[np.arange(trainlen, trainlen+testlen)]
+    y_train = label[np.arange(0, trainlen)]
+    y_test = label[np.arange(trainlen, trainlen+testlen)]
+
+    print(np.shape(x_train))
+    # Oversampled low classes => Meilleurs résultat pour les classes avec peu d'exemples
+    print("Oversampling train dataset")
+    #x_train , y_train = SMOTE().fit_sample(x_train, y_train)
+
+    ros = RandomOverSampler(random_state=0)
+    x_train, y_train = ros.fit_sample(x_train, y_train)
+
+    print(np.shape(x_train))
+    # Transform to binary
+    y_train = encoder.fit_transform(y_train)
+    y_test = encoder.fit_transform(y_test)
 
     if(CNN):
         x_final_train = []
@@ -182,7 +196,7 @@ def preporcess(data, dataTest, CNN=False):
             x_final_test.append(sample)
         x_test = np.array(x_final_test)
 
-        print(np.shape(x_test))
+        print(np.shape(x_train))
 
     # Generation d'un dataset de validation
     seed = 9
@@ -211,7 +225,7 @@ def main():
 
     P1 = input("Choisissez le reseau: " + ' '.join(input_list) + "\n")
     CNN = False
-    if(P1 == '2' ):
+    if(P1 == '2'):
         CNN = True
 
     x_train, y_train, x_validation, y_validation, x_test, y_test = preporcess(
@@ -220,7 +234,8 @@ def main():
     if (P1 == '1'):
          ### MLP model ###
         model = generate_model(41)
-        model.compile(loss='categorical_crossentropy',optimizer=optimizers.Adam(lr=0.001), metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy',
+                      optimizer=optimizers.Adam(lr=0.001), metrics=['accuracy'])
 
     elif (P1 == '2'):
         ### CNN 2D model ##
@@ -237,36 +252,50 @@ def main():
         # grid search epochs, batch size and optimizer
         opt = ['rmsprop', 'adam']
         init = ['glorot_uniform', 'normal', 'uniform']
-        epochs = [5,10,20]
+        epochs = [5, 10, 20]
         batches = [50]
-    
+
         param_grid = dict(optimizer=opt, epochs=epochs,
-                  batch_size=batches, init=init)
+                          batch_size=batches, init=init)
         grid = GridSearchCV(estimator=model, param_grid=param_grid, verbose=10)
         grid_result = grid.fit(x_train, y_train)
         # summarize results
-        print("Test on best: %f" % grid_result.score(x_test,y_test))
-        print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+        print("Test on best: %f" % grid_result.score(x_test, y_test))
+        print("Best: %f using %s" %
+              (grid_result.best_score_, grid_result.best_params_))
         means = grid_result.cv_results_['mean_test_score']
         stds = grid_result.cv_results_['std_test_score']
         params = grid_result.cv_results_['params']
-        
+
         for mean, stdev, param in zip(means, stds, params):
             print("%f (%f) with: %r" % (mean, stdev, param))
 
     if (P1 != '3'):
-        model.fit(x_train, y_train,validation_data=(x_validation,y_validation), epochs=1, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+        model.fit(x_train, y_train, validation_data=(x_validation, y_validation),
+                  epochs=10, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+
+        pred_x_train = model.predict(x_train, batch_size=50)
+        pred_x_test = model.predict(x_test, batch_size=50)
+
+        #print("Train a Random Forest model")
+        #rf = RandomForestClassifier(n_estimators=200, criterion="entropy", random_state=1,verbose=2)
+        #rf.fit(pred_x_train,y_train)
+        print("Train SVM Classifier with One Vs All strategy")
+        # Preprocess for SVM
+        lb = LabelBinarizer()
+        lb.fit([1,2,3,4,5])
+        y_train_1d = lb.inverse_transform(y_train)
+        y_test_1d =  lb.inverse_transform(y_test)
+
+        print(np.shape(y_train_1d))
+
+        lin_clf = svm.LinearSVC(verbose=2)
+        lin_clf.fit(pred_x_train,y_train_1d)
         
-        eval(model, x_test, y_test)
+        print("Mean accuracy: %f" % lin_clf.score(pred_x_test,y_test_1d))
+
+    eval(model, x_test, y_test)
 
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
