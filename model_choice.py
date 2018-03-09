@@ -22,6 +22,7 @@ from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
+from sklearn.metrics import classification_report
 
 # dos =1 / probe = 4 / r2l = 3 / u2r = 2 / normal =5
 def transform(x):
@@ -81,7 +82,7 @@ def generate_model(shape):
     model.add(Dropout(0.2))
     model.add(Dense(41, activation='softmax'))
     model.add(Dropout(0.2))
-    model.add(Dense(20, activation='softmax'))
+    model.add(Dense(20, activation='softmax',name='output'))
     model.add(Dropout(0.2))
     model.add(Dense(5, activation='softmax'))
 
@@ -107,8 +108,8 @@ def generate_cnn_model(shape):
     model.add(MaxPooling2D(pool_size=(2, 1)))
     model.add(Flatten())
     model.add(Dense(100, kernel_initializer='normal', activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(20, kernel_initializer='normal', activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(20, kernel_initializer='normal', activation='relu',name='output'))
     model.add(Dense(5, kernel_initializer='normal', activation='softmax'))
     return model
 
@@ -125,7 +126,7 @@ def create_model(optimizer='rmsprop', init='glorot_uniform'):
     model.add(Dropout(0.2))
     model.add(Dense(41, kernel_initializer=init, activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(20, kernel_initializer=init, activation='relu'))
+    model.add(Dense(20, kernel_initializer=init, activation='relu',name='output'))
     model.add(Dropout(0.2))
     model.add(Dense(5, kernel_initializer=init, activation='softmax'))
 
@@ -175,7 +176,7 @@ def preporcess(data, dataTest, CNN=False):
     print("Oversampling train dataset")
     #x_train , y_train = SMOTE().fit_sample(x_train, y_train)
 
-    ros = RandomOverSampler(random_state=0)
+    ros = RandomOverSampler(ratio='minority', random_state=0)
     x_train, y_train = ros.fit_sample(x_train, y_train)
 
     print(np.shape(x_train))
@@ -272,28 +273,39 @@ def main():
 
     if (P1 != '3'):
         model.fit(x_train, y_train, validation_data=(x_validation, y_validation),
-                  epochs=10, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+                  epochs=2, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
 
-        pred_x_train = model.predict(x_train, batch_size=50)
-        pred_x_test = model.predict(x_test, batch_size=50)
+        intermediate_layer_model = models.Model(inputs=model.input,
+                                 outputs=model.get_layer('output').output)
+        pred_x_train = intermediate_layer_model.predict(x_train, batch_size=50)
+        pred_x_test = intermediate_layer_model.predict(x_test, batch_size=50)
 
         #print("Train a Random Forest model")
-        #rf = RandomForestClassifier(n_estimators=200, criterion="entropy", random_state=1,verbose=2)
+        #rf = RandomForestClassifier(n_estimators=100, criterion="entropy", random_state=1,verbose=2)
         #rf.fit(pred_x_train,y_train)
+        
         print("Train SVM Classifier with One Vs All strategy")
-        # Preprocess for SVM
+        #Preprocess for SVM
         lb = LabelBinarizer()
         lb.fit([1,2,3,4,5])
         y_train_1d = lb.inverse_transform(y_train)
         y_test_1d =  lb.inverse_transform(y_test)
-
-        print(np.shape(y_train_1d))
-
-        lin_clf = svm.LinearSVC(verbose=2)
+        lin_clf = svm.LinearSVC(verbose=2,max_iter=100000)
         lin_clf.fit(pred_x_train,y_train_1d)
-        
-        print("Mean accuracy: %f" % lin_clf.score(pred_x_test,y_test_1d))
 
+        lin_clf_only = svm.LinearSVC(verbose=2,max_iter=100000)
+        lin_clf_only.fit(x_train,y_train_1d)
+
+        #y_pred_test_rf = rf.predict(pred_x_test)
+        y_pred_test_svm = lin_clf.predict(pred_x_test)
+        y_pred_test_svm_bin = lb.fit_transform(y_pred_test_svm)
+        #print("Mean accuracy: %f" % rf.score(pred_x_test,y_test))
+        print("Mean accuracy: %f" % lin_clf_only.score(x_test,y_test_1d))
+        print("Mean accuracy: %f" % lin_clf.score(pred_x_test,y_test_1d))
+        #print(classification_report(y_test, y_pred_test_rf))
+
+        print(classification_report(y_test, y_pred_test_svm_bin))
+        
     eval(model, x_test, y_test)
 
 
