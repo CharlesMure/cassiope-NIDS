@@ -141,24 +141,27 @@ def preporcess(data, dataTest, CNN=False):
     encoder2 = LabelEncoder()
 
     x_train = data[:, np.arange(0, 41)]
-    x_train[:, 1] = encoder2.fit_transform(x_train[:, 1])
-    x_train[:, 2] = encoder2.fit_transform(x_train[:, 2])
-    x_train[:, 3] = encoder2.fit_transform(x_train[:, 3])
+    x_test = dataTest[:, np.arange(0, 41)]
+
+    encoder2.fit(x_train[:,1])
+    x_train[:, 1] = encoder2.transform(x_train[:, 1])
+    x_test[:, 1] = encoder2.transform(x_test[:, 1])
+
+    encoder2.fit(x_train[:,2])
+    x_train[:, 2] = encoder2.transform(x_train[:, 2])
+    x_test[:, 2] = encoder2.transform(x_test[:, 2])
+
+    encoder2.fit(x_train[:,3])
+    x_train[:, 3] = encoder2.transform(x_train[:, 3])
+    x_test[:, 3] = encoder2.transform(x_test[:, 3])
 
     scaler.fit(x_train)
     x_train = scaler.transform(x_train)
-
-    train_label = data[:, 41]
-    # y_train = encoder.fit_transform(train_label)
-    train_label = [transform(attacktype) for attacktype in train_label]
-
-    x_test = dataTest[:, np.arange(0, 41)]
-    x_test[:, 1] = encoder2.fit_transform(x_test[:, 1])
-    x_test[:, 2] = encoder2.fit_transform(x_test[:, 2])
-    x_test[:, 3] = encoder2.fit_transform(x_test[:, 3])
-
     scaler.fit(x_test)
     x_test = scaler.transform(x_test)
+
+    train_label = data[:, 41]
+    train_label = [transform(attacktype) for attacktype in train_label]
 
     test_label = dataTest[:, 41]
     test_label = [transform(attacktype) for attacktype in test_label]
@@ -299,14 +302,10 @@ def main():
         lin_clf = svm.LinearSVC(verbose=2,max_iter=10000)
         lin_clf.fit(pred_x_train,y_train_1d)
 
-        lin_clf_only = svm.LinearSVC(verbose=2,max_iter=10000)
-        lin_clf_only.fit(x_train,y_train_1d)
-
         #y_pred_test_rf = rf.predict(pred_x_test)
         y_pred_test_svm = lin_clf.predict(pred_x_test)
         y_pred_test_svm_bin = lb.fit_transform(y_pred_test_svm)
         #print("Mean accuracy: %f" % rf.score(pred_x_test,y_test))
-        print("Mean accuracy: %f" % lin_clf_only.score(x_test,y_test_1d))
         print("Mean accuracy: %f" % lin_clf.score(pred_x_test,y_test_1d))
         #print(classification_report(y_test, y_pred_test_rf))
 
