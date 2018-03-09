@@ -109,7 +109,7 @@ def generate_cnn_model(shape):
     model.add(Flatten())
     model.add(Dense(100, kernel_initializer='normal', activation='relu'))
     model.add(Dropout(0.2))
-    model.add(Dense(20, kernel_initializer='normal', activation='relu',name='output'))
+    model.add(Dense(20, kernel_initializer='normal', activation='softmax',name='output'))
     model.add(Dense(5, kernel_initializer='normal', activation='softmax'))
     return model
 
@@ -273,7 +273,7 @@ def main():
 
     if (P1 != '3'):
         model.fit(x_train, y_train, validation_data=(x_validation, y_validation),
-                  epochs=2, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+                  epochs=10, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
 
         intermediate_layer_model = models.Model(inputs=model.input,
                                  outputs=model.get_layer('output').output)
@@ -290,10 +290,10 @@ def main():
         lb.fit([1,2,3,4,5])
         y_train_1d = lb.inverse_transform(y_train)
         y_test_1d =  lb.inverse_transform(y_test)
-        lin_clf = svm.LinearSVC(verbose=2,max_iter=100000)
+        lin_clf = svm.LinearSVC(verbose=2,max_iter=10000)
         lin_clf.fit(pred_x_train,y_train_1d)
 
-        lin_clf_only = svm.LinearSVC(verbose=2,max_iter=100000)
+        lin_clf_only = svm.LinearSVC(verbose=2,max_iter=10000)
         lin_clf_only.fit(x_train,y_train_1d)
 
         #y_pred_test_rf = rf.predict(pred_x_test)
