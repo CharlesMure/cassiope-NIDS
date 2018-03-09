@@ -108,8 +108,8 @@ def generate_cnn_model(shape):
     model.add(MaxPooling2D(pool_size=(2, 1)))
     model.add(Flatten())
     model.add(Dense(100, kernel_initializer='normal', activation='relu'))
-    model.add(Dropout(0.2))
-    model.add(Dense(20, kernel_initializer='normal', activation='softmax',name='output'))
+    model.add(Dropout(0.3))
+    model.add(Dense(20, kernel_initializer='normal', activation='relu',name='output'))
     model.add(Dense(5, kernel_initializer='normal', activation='softmax'))
     return model
 
@@ -279,6 +279,12 @@ def main():
                                  outputs=model.get_layer('output').output)
         pred_x_train = intermediate_layer_model.predict(x_train, batch_size=50)
         pred_x_test = intermediate_layer_model.predict(x_test, batch_size=50)
+
+        # Scale [0-1] for SVM learning
+        scaler = MinMaxScaler()
+        scaler.fit(pred_x_train)
+        pred_x_train = scaler.fit_transform(pred_x_train)
+        pred_x_test = scaler.fit_transform(pred_x_test)
 
         #print("Train a Random Forest model")
         #rf = RandomForestClassifier(n_estimators=100, criterion="entropy", random_state=1,verbose=2)
