@@ -4,7 +4,7 @@
 
 import keras
 import csv
-from keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, EarlyStopping, ModelCheckpoint
 from keras import layers, models, optimizers
 from keras import backend as K
 from keras.utils import to_categorical
@@ -18,7 +18,7 @@ from imblearn.over_sampling import SMOTE, ADASYN, RandomOverSampler
 
 import numpy as np
 
-from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, LabelEncoder
+from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, LabelEncoder, RobustScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
@@ -88,6 +88,25 @@ def generate_model(shape):
 
     return model
 
+def deep_mlp_model(shape):
+    '''
+    https://github.com/jvmancuso/DeepIDS/blob/master/develop/2017-08-07-jm-KerasTestReLU.ipynb '''
+    model = keras.models.Sequential()
+
+    model.add(Dense(4096, input_dim=shape))
+    model.add(Activation('relu'))
+    model.add(BatchNormalization())
+    model.add(Dense(2048))
+    model.add(Activation('relu'))
+    model.add(BatchNormalization())
+    model.add(Dense(1024))
+    model.add(Activation('relu'))
+    model.add(BatchNormalization())
+    model.add(Dense(20, activation='softmax',name='output'))
+    model.add(Dropout(0.2))
+    model.add(Dense(5, activation='softmax'))
+
+    return model
 
 def generate_cnn_model(shape):
     '''
@@ -108,7 +127,7 @@ def generate_cnn_model(shape):
     model.add(MaxPooling2D(pool_size=(2, 1)))
     model.add(Flatten())
     model.add(Dense(100, kernel_initializer='normal', activation='relu'))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.5))
     model.add(Dense(20, kernel_initializer='normal', activation='relu',name='output'))
     model.add(Dense(5, kernel_initializer='normal', activation='softmax'))
     return model
@@ -155,31 +174,25 @@ def preporcess(data, dataTest, CNN=False):
     x_train[:, 3] = encoder2.transform(x_train[:, 3])
     x_test[:, 3] = encoder2.transform(x_test[:, 3])
 
+    print(x_test)
     scaler.fit(x_train)
     x_train = scaler.transform(x_train)
     scaler.fit(x_test)
     x_test = scaler.transform(x_test)
+    print(x_test)
 
     train_label = data[:, 41]
-    train_label = [transform(attacktype) for attacktype in train_label]
+    y_train = [transform(attacktype) for attacktype in train_label]
 
     test_label = dataTest[:, 41]
-    test_label = [transform(attacktype) for attacktype in test_label]
-
-    # Join dataset => meme encoding pour train et test
-    label = np.concatenate((train_label, test_label))
-
-    trainlen = np.size(train_label)
-    testlen = np.size(test_label)
-    y_train = label[np.arange(0, trainlen)]
-    y_test = label[np.arange(trainlen, trainlen+testlen)]
+    y_test = [transform(attacktype) for attacktype in test_label]
 
     print(np.shape(x_train))
     # Oversampled low classes => Meilleurs résultat pour les classes avec peu d'exemples
     print("Oversampling train dataset")
-    #x_train , y_train = SMOTE().fit_sample(x_train, y_train)
+    #x_train , y_train = SMOTE(ratio='auto').fit_sample(x_train, y_train)
 
-    ros = RandomOverSampler(ratio='minority', random_state=0)
+    ros = RandomOverSampler(ratio='minority', random_state=10)
     x_train, y_train = ros.fit_sample(x_train, y_train)
 
     print(np.shape(x_train))
@@ -219,7 +232,7 @@ def eval(model, x_test, y_test):
 
 def main():
 
-    input_list = ["1. MLP", "2. CNN2D", "3. Sklearn Classifier"]
+    input_list = ["1. MLP", "2. CNN2D", "3. DeepMLP", "4. Sklearn Classifier"]
 
     filereader = csv.reader(open("Data/KDDTrain+.txt"), delimiter=",")
     data = np.array(list(filereader))
@@ -246,10 +259,17 @@ def main():
         model = generate_cnn_model(41)
 
         # initiate RMSprop optimizer
-        opt = optimizers.Adam(lr=0.0005)
+        opt = optimizers.RMSprop()
         model.compile(loss='categorical_crossentropy',
                       optimizer=opt, metrics=['accuracy'])
     elif (P1 == '3'):
+        ### Deep MLP ###
+        model = deep_mlp_model(41)
+
+        opt = optimizers.Adam()
+        model.compile(opt, 'categorical_crossentropy', metrics = ['acc'])
+
+    elif (P1 == '4'):
 
         model = KerasClassifier(build_fn=create_model, verbose=0)
 
@@ -274,9 +294,12 @@ def main():
         for mean, stdev, param in zip(means, stds, params):
             print("%f (%f) with: %r" % (mean, stdev, param))
 
-    if (P1 != '3'):
-        model.fit(x_train, y_train, validation_data=(x_validation, y_validation),
-                  epochs=10, batch_size=100,  callbacks=[TensorBoard(log_dir='/tmp/neuralnet')])
+    if (P1 != '4'):
+        stopper = EarlyStopping(monitor='val_acc', patience = 3, mode='auto')
+        checker = ModelCheckpoint('../src/ensemble/reluModels/relu_test_best_8', monitor='val_acc', mode='auto')
+
+
+        model.fit(x_train, y_train, epochs=10, batch_size=50, validation_data=(x_validation, y_validation),callbacks = [stopper, checker])
 
         intermediate_layer_model = models.Model(inputs=model.input,
                                  outputs=model.get_layer('output').output)
