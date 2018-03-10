@@ -101,9 +101,7 @@ def deep_mlp_model(shape):
     model.add(BatchNormalization())
     model.add(Dense(1024))
     model.add(Activation('relu'))
-    model.add(BatchNormalization())
-    model.add(Dense(20, activation='softmax',name='output'))
-    model.add(Dropout(0.2))
+    model.add(BatchNormalization(name='output'))
     model.add(Dense(5, activation='softmax'))
 
     return model
@@ -294,12 +292,10 @@ def main():
         for mean, stdev, param in zip(means, stds, params):
             print("%f (%f) with: %r" % (mean, stdev, param))
 
-    if (P1 != '4'):
+    if (P1 != '4')
         stopper = EarlyStopping(monitor='val_acc', patience = 3, mode='auto')
-        checker = ModelCheckpoint('../src/ensemble/reluModels/relu_test_best_8', monitor='val_acc', mode='auto')
 
-
-        model.fit(x_train, y_train, epochs=10, batch_size=50, validation_data=(x_validation, y_validation),callbacks = [stopper, checker])
+        model.fit(x_train, y_train, epochs=10, batch_size=50, validation_data=(x_validation, y_validation),callbacks = [stopper])
 
         intermediate_layer_model = models.Model(inputs=model.input,
                                  outputs=model.get_layer('output').output)
