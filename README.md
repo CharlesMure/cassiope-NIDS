@@ -1,6 +1,10 @@
 # cassiope-NIDS
 Creating a NIDS based on a Deep Neural Network (CNN) - a technical approach
 
+The project was conducted during my master studies at Télécom SudParis.
+
+![Overview of the project](https://raw.githubusercontent.com/CharlesMure/cassiope-NIDS/master/Poster%20-%20Equipe%2018.jpg)
+
 ## Set-Up
 
 We Use Python3, TensorFlow and Keras to generate and test our models. The collection part is handle by 
