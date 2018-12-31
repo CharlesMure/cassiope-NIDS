@@ -71,7 +71,7 @@ def animate(i):
   ax1.plot(xs,ys9, label="Shellcode", color="pink")
   ax1.plot(xs,ys10, label="Worms", color="peru")
   ax1.set_ylim(0, 2)
-  plt.title('Realtime attacks probability using 2D CNN', style='italic')
+  plt.title('Realtime attack probability using 2D CNN', style='italic')
   plt.xlabel('Time', style='italic')
   plt.legend(loc="upper left")
   plt.ylabel('Probability')
