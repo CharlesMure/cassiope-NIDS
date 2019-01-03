@@ -18,7 +18,9 @@ import numpy as np
 import time
 import os
 from tabulate import tabulate
-
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from matplotlib import style
 
 def main():
 
@@ -61,10 +63,14 @@ def main():
             dataline = scaler.transform(dataline)
 
             dataline = dataline.reshape([1,16, 1,1])
-
+            print(type(loaded_model.predict(dataline)))
             print("prediction: ")
             print(tabulate(loaded_model.predict(dataline),headers=['Analysis','Backdoor','DoS','Exploits','Fuzzers','Generic','Normal','Reconnaissance','Shellcode','Worms']))
-
+            #print(loaded_model.predict(dataline))
+            npi=loaded_model.predict(dataline)
+            with open('predictions.dat', 'a') as predictValues:
+              np.savetxt(predictValues, npi, delimiter=",")
+            predictValues.close()
 
 if __name__ == "__main__":
     main()

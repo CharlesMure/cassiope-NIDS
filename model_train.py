@@ -49,7 +49,7 @@ def generate_cnn_model(shape):
     model.add(Dense(10, kernel_initializer='normal', activation='softmax'))
     return model
 
-def preporcess(data, dataTest):
+def preprocess(data, dataTest):
 
     scaler = MinMaxScaler()
     encoder = LabelBinarizer()
@@ -120,7 +120,7 @@ def main():
     filereaderTest = csv.reader(open("Data/UNSW-NB15/UNSW_NB15_testing-set.csv"), delimiter=",")
     dataTest = np.array(list(filereaderTest))
 
-    x_train, y_train, x_validation, y_validation, x_test, y_test = preporcess(
+    x_train, y_train, x_validation, y_validation, x_test, y_test = preprocess(
         data, dataTest)
 
     # Declare the model

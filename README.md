@@ -7,6 +7,8 @@ The project was conducted during my master studies at Télécom SudParis.
 
 ## Set-Up
 
+First, install [CapsNet-Keras](https://github.com/XifengGuo/CapsNet-Keras) and [python3-tabulate](https://bitbucket.org/astanin/python-tabulate/)
+
 We Use Python3, TensorFlow and Keras to generate and test our models. The collection part is handle by 
 
 ```
